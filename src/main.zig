@@ -1,3 +1,5 @@
+// taken from exercism
+// https://github.com/exercism/zig/blob/main/exercises/practice/word-count/test_word_count.zig
 const std = @import("std");
 const mem = std.mem;
 const testing = std.testing;
