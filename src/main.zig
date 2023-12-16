@@ -4,9 +4,9 @@ const testing = std.testing;
 
 pub fn main() !void {
     const alloc = std.heap.page_allocator;
-    _ = alloc;
-    // const counts = try countWords(alloc, "The quick brown fox jumped over the lazy dog.");
-    // std.debug.print("{}\n", .{counts});
+    var counts = try countWordsAlloc(alloc, "The quick brown fox jumped over the lazy dog.");
+    defer freeKeysAndDeinit(&counts);
+    std.debug.print("{}\n", .{counts});
 }
 
 pub fn toLowercaseAlloc(alloc: std.mem.Allocator, inp: []const u8) ![]const u8 {
@@ -141,7 +141,7 @@ test "WordBoundaries" {
 
 /// Returns the counts of the words in `s`.
 /// Caller owns the returned memory.
-pub fn countWords(alloc: mem.Allocator, s: []const u8) !std.StringHashMap(u32) {
+pub fn countWordsAlloc(alloc: mem.Allocator, s: []const u8) !std.StringHashMap(u32) {
     // split iterator
     var out = std.StringHashMap(u32).init(alloc);
     var b = WordBoundaries.findNext(s, 0);
@@ -170,7 +170,7 @@ fn freeKeysAndDeinit(self: *std.StringHashMap(u32)) void {
 
 test "count one word" {
     const s = "word";
-    var map = try countWords(testing.allocator, s);
+    var map = try countWordsAlloc(testing.allocator, s);
     defer freeKeysAndDeinit(&map);
     try testing.expectEqual(@as(u32, 1), map.count());
     try testing.expectEqual(@as(?u32, 1), map.get("word"));
@@ -178,7 +178,7 @@ test "count one word" {
 
 test "count one of each word" {
     const s = "one of each";
-    var map = try countWords(testing.allocator, s);
+    var map = try countWordsAlloc(testing.allocator, s);
     defer freeKeysAndDeinit(&map);
     try testing.expectEqual(@as(u32, 3), map.count());
     try testing.expectEqual(@as(?u32, 1), map.get("one"));
@@ -188,7 +188,7 @@ test "count one of each word" {
 
 test "multiple occurrences of a word" {
     const s = "one fish two fish red fish blue fish";
-    var map = try countWords(testing.allocator, s);
+    var map = try countWordsAlloc(testing.allocator, s);
     defer freeKeysAndDeinit(&map);
     try testing.expectEqual(@as(u32, 5), map.count());
     try testing.expectEqual(@as(?u32, 1), map.get("one"));
@@ -200,7 +200,7 @@ test "multiple occurrences of a word" {
 
 test "handles cramped lists" {
     const s = "one,two,three";
-    var map = try countWords(testing.allocator, s);
+    var map = try countWordsAlloc(testing.allocator, s);
     defer freeKeysAndDeinit(&map);
     try testing.expectEqual(@as(u32, 3), map.count());
     try testing.expectEqual(@as(?u32, 1), map.get("one"));
@@ -210,7 +210,7 @@ test "handles cramped lists" {
 
 test "handles expanded lists" {
     const s = "one,\ntwo,\nthree";
-    var map = try countWords(testing.allocator, s);
+    var map = try countWordsAlloc(testing.allocator, s);
     defer freeKeysAndDeinit(&map);
     try testing.expectEqual(@as(u32, 3), map.count());
     try testing.expectEqual(@as(?u32, 1), map.get("one"));
@@ -220,7 +220,7 @@ test "handles expanded lists" {
 
 test "ignore punctuation" {
     const s = "car: carpet as java: javascript!!&@$%^&";
-    var map = try countWords(testing.allocator, s);
+    var map = try countWordsAlloc(testing.allocator, s);
     defer freeKeysAndDeinit(&map);
     try testing.expectEqual(@as(u32, 5), map.count());
     try testing.expectEqual(@as(?u32, 1), map.get("car"));
@@ -232,7 +232,7 @@ test "ignore punctuation" {
 
 test "include numbers" {
     const s = "testing, 1, 2 testing";
-    var map = try countWords(testing.allocator, s);
+    var map = try countWordsAlloc(testing.allocator, s);
     defer freeKeysAndDeinit(&map);
     try testing.expectEqual(@as(u32, 3), map.count());
     try testing.expectEqual(@as(?u32, 2), map.get("testing"));
@@ -242,7 +242,7 @@ test "include numbers" {
 
 test "normalize case" {
     const s = "go Go GO Stop stop";
-    var map = try countWords(testing.allocator, s);
+    var map = try countWordsAlloc(testing.allocator, s);
     defer freeKeysAndDeinit(&map);
     try testing.expectEqual(@as(u32, 2), map.count());
     try testing.expectEqual(@as(?u32, 3), map.get("go"));
@@ -251,7 +251,7 @@ test "normalize case" {
 
 test "with apostrophes" {
     const s = "'First: don't laugh. Then: don't cry. You're getting it.'";
-    var map = try countWords(testing.allocator, s);
+    var map = try countWordsAlloc(testing.allocator, s);
     defer freeKeysAndDeinit(&map);
     try testing.expectEqual(@as(u32, 8), map.count());
     try testing.expectEqual(@as(?u32, 1), map.get("first"));
@@ -266,7 +266,7 @@ test "with apostrophes" {
 
 test "with quotations" {
     const s = "Joe can't tell between 'large' and large.";
-    var map = try countWords(testing.allocator, s);
+    var map = try countWordsAlloc(testing.allocator, s);
     defer freeKeysAndDeinit(&map);
     try testing.expectEqual(@as(u32, 6), map.count());
     try testing.expectEqual(@as(?u32, 1), map.get("joe"));
@@ -279,7 +279,7 @@ test "with quotations" {
 
 test "substrings from the beginning" {
     const s = "Joe can't tell between app, apple and a.";
-    var map = try countWords(testing.allocator, s);
+    var map = try countWordsAlloc(testing.allocator, s);
     defer freeKeysAndDeinit(&map);
     try testing.expectEqual(@as(u32, 8), map.count());
     try testing.expectEqual(@as(?u32, 1), map.get("joe"));
@@ -294,7 +294,7 @@ test "substrings from the beginning" {
 
 test "multiple spaces not detected as a word" {
     const s = " multiple   whitespaces";
-    var map = try countWords(testing.allocator, s);
+    var map = try countWordsAlloc(testing.allocator, s);
     defer freeKeysAndDeinit(&map);
     try testing.expectEqual(@as(u32, 2), map.count());
     try testing.expectEqual(@as(?u32, 1), map.get("multiple"));
@@ -303,7 +303,7 @@ test "multiple spaces not detected as a word" {
 
 test "alternating word separators not detected as a word" {
     const s = ",\n,one,\n ,two \n 'three'";
-    var map = try countWords(testing.allocator, s);
+    var map = try countWordsAlloc(testing.allocator, s);
     defer freeKeysAndDeinit(&map);
     try testing.expectEqual(@as(u32, 3), map.count());
     try testing.expectEqual(@as(?u32, 1), map.get("one"));
@@ -313,7 +313,7 @@ test "alternating word separators not detected as a word" {
 
 test "quotation for word with apostrophe" {
     const s = "can, can't, 'can't'";
-    var map = try countWords(testing.allocator, s);
+    var map = try countWordsAlloc(testing.allocator, s);
     defer freeKeysAndDeinit(&map);
     try testing.expectEqual(@as(u32, 2), map.count());
     try testing.expectEqual(@as(?u32, 1), map.get("can"));
