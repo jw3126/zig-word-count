@@ -58,6 +58,7 @@ const WordBoundaries = struct {
     pub fn findNext(inp: []const u8, istart: usize) WordBoundaries {
         const apostrophe: u8 = '\'';
         const separators = " \t\n.:,;!?&^$%@(){}[]<>";
+        _ = separators;
         var ifirst = istart;
         while (true) {
             if (ifirst >= inp.len) {
@@ -66,7 +67,7 @@ const WordBoundaries = struct {
             const c: u8 = inp[ifirst];
             if (c == apostrophe) {
                 ifirst += 1;
-            } else if (c.isAlphaNumeric()) {
+            } else if (std.ascii.isAlphanumeric(c)) {
                 break;
             } else {
                 ifirst += 1;
@@ -82,15 +83,15 @@ const WordBoundaries = struct {
                 break;
             }
             const c = inp[inext];
-            if (sliceContains(separators, c)) {
-                break;
-            }
             if (c == apostrophe) {
                 inext += 1;
-                continue;
+            } else if (std.ascii.isAlphanumeric(c)) {
+                ilast = inext;
+                inext += 1;
+            } else {
+                inext += 1;
+                break;
             }
-            ilast = inext;
-            inext += 1;
         }
         return WordBoundaries{ .ifirst = ifirst, .ilast = ilast, .inext = inext };
     }
