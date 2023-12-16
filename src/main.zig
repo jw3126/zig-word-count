@@ -63,16 +63,14 @@ const WordBoundaries = struct {
             if (ifirst >= inp.len) {
                 break;
             }
-            const c = inp[ifirst];
+            const c: u8 = inp[ifirst];
             if (c == apostrophe) {
                 ifirst += 1;
-                continue;
-            }
-            if (sliceContains(separators, c)) {
+            } else if (c.isAlphaNumeric()) {
+                break;
+            } else {
                 ifirst += 1;
-                continue;
             }
-            break;
         }
         if (ifirst >= inp.len) {
             return WordBoundaries.createInvalid();
