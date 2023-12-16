@@ -142,7 +142,6 @@ test "WordBoundaries" {
 /// Returns the counts of the words in `s`.
 /// Caller owns the returned memory.
 pub fn countWordsAlloc(alloc: mem.Allocator, s: []const u8) !std.StringHashMap(u32) {
-    // split iterator
     var out = std.StringHashMap(u32).init(alloc);
     var b = WordBoundaries.findNext(s, 0);
     while (b.isValid()) {
